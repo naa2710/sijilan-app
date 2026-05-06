@@ -488,7 +488,7 @@ const SharedRecordView = ({
     imageName: receiptImage?.fileName || "",
     imageType: receiptImage?.mimeType || "",
     source: "partner",
-    status: globalSettings?.financials?.defaultReceiptStatus || (globalSettings?.financials?.autoApprove ? "approved" : "pending"),
+    status: globalSettings?.financials?.defaultReceiptStatus || "approved",
   });
 
   const applyReceiptImageFile = async (selectedFile, source = "upload") => {
@@ -1325,30 +1325,35 @@ const SharedRecordView = ({
               <div className="max-h-[400px] overflow-y-auto pr-1 custom-scrollbar space-y-3">
                 {messageThread
                   .filter((m) => m.sender !== "partner")
-                  .map((entry) => (
-                    <div
-                      key={entry.id || `${entry.sender}-${entry.sentAt}`}
-                      className={`p-4 rounded-2xl border ${
-                        isDarkMode
-                          ? "bg-amber-500/10 border-amber-500/20 text-white"
-                          : "bg-amber-50 border-amber-200 text-slate-900 shadow-sm"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-1.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">
-                          من: الإدارة
-                        </span>
-                        <span className="text-[9px] font-bold opacity-60">
-                          {formatDateTime(entry.sentAt)}
-                        </span>
+                  .map((entry) => {
+                    const isReset = entry.text === "__RESET__" || entry.text?.includes("تصفير");
+                    return (
+                      <div
+                        key={entry.id || `${entry.sender}-${entry.sentAt}`}
+                        className={`p-5 rounded-3xl border-2 shadow-sm ${
+                          isReset
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-900"
+                            : isDarkMode
+                            ? "bg-amber-500/10 border-amber-500/20 text-white"
+                            : "bg-amber-50 border-amber-200 text-slate-900 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${isReset ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {isReset ? 'تنبيه النظام' : 'رسالة من الإدارة'}
+                          </span>
+                          <span className="text-[9px] font-bold opacity-60">
+                            {formatDateTime(entry.sentAt)}
+                          </span>
+                        </div>
+                        <p className={`text-xs font-black leading-relaxed whitespace-pre-wrap ${isReset ? 'text-emerald-700' : ''}`}>
+                          {entry.text === "__RESET__"
+                            ? "✅ تم تصفير حسابك بنجاح والبدء بدورة مالية جديدة. نتمنى لك التوفيق!"
+                            : entry.text}
+                        </p>
                       </div>
-                      <p className="text-[11px] font-bold leading-relaxed whitespace-pre-wrap">
-                        {entry.text === "__RESET__"
-                          ? "تم تصفير سجلاتك بنجاح والبدء من جديد. نتمنى لك التوفيق!"
-                          : entry.text}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             ) : (
               <p

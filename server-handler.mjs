@@ -1641,6 +1641,14 @@ export const handleRequest = async (request, response) => {
       handleUpdateAbdalalemLedger(request, response);
       return;
     }
+    if (request.method === 'POST' && url.pathname === '/api/admin/clear-all-ledgers') {
+      const data = await readData(LEDGERS_FILE);
+      // Clear all keys
+      await writeData(LEDGERS_FILE, {});
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
     if (request.method === 'GET' && url.pathname === '/api/admin/ledger-state') {
       const partnerId = url.searchParams.get('partnerId');
       if (partnerId && isPartnerDisabled(partnerId)) {
@@ -1648,6 +1656,18 @@ export const handleRequest = async (request, response) => {
         return;
       }
       handleGetLedgerState(url, response);
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/admin/partner-messages') {
+      const partnerId = url.searchParams.get('partnerId');
+      if (partnerId && isPartnerDisabled(partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
+      const data = await readData(PARTNER_MESSAGES_FILE);
+      const allMessages = data?.messages || {};
+      const result = partnerId ? (allMessages[partnerId] || null) : allMessages;
+      sendJson(response, 200, { ok: true, messages: result });
       return;
     }
 

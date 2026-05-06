@@ -594,7 +594,14 @@ const SharedPartnerRoot = () => {
 
           return { ...prev, [partnerId]: [...nextPartnerLedger, ...localOnlyRecords] };
         });
-      } catch (e) {} finally {
+        const messages = await fetchPartnerMessagesFromServer(partnerId);
+        if (disposed) return;
+        if (messages) {
+           setPartnerMessages(prev => ({ ...prev, [partnerId]: messages }));
+        }
+      } catch (e) {
+        console.error('Failed to sync partner data:', e);
+      } finally {
         syncInFlight = false;
       }
     };

@@ -100,6 +100,12 @@ export const submitPartnerReplyToServer = async ({ partnerId, partnerName, text,
   )
 );
 
+export const fetchPartnerMessagesFromServer = async (partnerId) => {
+  const url = partnerId ? `/api/admin/partner-messages?partnerId=${partnerId}` : '/api/admin/partner-messages';
+  const payload = await requestJson(url, {}, 'تعذر قراءة رسائل الإدارة.');
+  return payload?.messages || null;
+};
+
 export const fetchPartnerMessageFromServer = async (partnerId) => {
   const safePartnerId = Number(partnerId);
   if (!safePartnerId) return null;

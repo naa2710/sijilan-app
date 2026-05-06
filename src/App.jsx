@@ -684,12 +684,19 @@ const App = () => {
           for (const partner of partners) {
             if (String(partner.id) === '1' || String(partner.id) === '2') continue; // Skip generic groups if any
             try {
-               await pushPartnerMessageToServer({
-                 partnerId: partner.id,
-                 partnerName: partner.name,
-                 text: '__RESET__',
-                 sentAt: new Date().toISOString(),
-               });
+                await pushPartnerMessageToServer({
+                  partnerId: partner.id,
+                  partnerName: partner.name,
+                  text: 'تم تصفير الحساب والبدء من جديد',
+                  sentAt: new Date().toISOString(),
+                });
+                // Also send the internal reset signal
+                await pushPartnerMessageToServer({
+                  partnerId: partner.id,
+                  partnerName: partner.name,
+                  text: '__RESET__',
+                  sentAt: new Date().toISOString(),
+                });
             } catch (e) {}
           }
         } catch (e) {
