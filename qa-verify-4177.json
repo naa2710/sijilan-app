@@ -1,0 +1,26 @@
+{
+  "urls": {
+    "home": "http://127.0.0.1:4177",
+    "shared": "http://127.0.0.1:4177/?sharedMode=write&partnerId=1&partnerName=%3F%3F%3F%3F%201"
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "checks": {
+    "homeLoaded": true,
+    "ledgersLoaded": true,
+    "partnerLedgerLoaded": true,
+    "messagePrepared": true,
+    "sharedPageLoaded": true,
+    "sharedMessageVisible": true,
+    "sharedNoteToggleVisible": false,
+    "reconciliationLoaded": true,
+    "reconciliationHasLedgerHelper": false
+  },
+  "screenshots": {
+    "home": "E:/money abdalalm/qa-home-4177.png",
+    "ledgers": "E:/money abdalalm/qa-ledgers-4177.png",
+    "partnerLedger": "E:/money abdalalm/qa-partner-ledger-4177.png",
+    "shared": "E:/money abdalalm/qa-shared-4177.png",
+    "reconciliation": "E:/money abdalalm/qa-reconciliation-4177.png"
+  }
+}

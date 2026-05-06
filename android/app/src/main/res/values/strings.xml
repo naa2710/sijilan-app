@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mizan Ledger</string>
+    <string name="title_activity_main">Mizan Ledger</string>
+    <string name="package_name">com.asim.moneyapp</string>
+    <string name="custom_url_scheme">com.asim.moneyapp</string>
+</resources>

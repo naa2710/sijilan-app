@@ -1,0 +1,18 @@
+{
+  "appId": "com.asim.moneyapp",
+  "appName": "سجلاتي",
+  "webDir": "dist",
+  "plugins": {
+    "GoogleAuth": {
+      "clientId": "559097453193-t9s7fp0ogna7vasdmnr624uk035hla6h.apps.googleusercontent.com",
+      "androidClientId": "559097453193-t9s7fp0ogna7vasdmnr624uk035hla6h.apps.googleusercontent.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/drive.appdata",
+        "profile",
+        "email"
+      ],
+      "serverClientId": "559097453193-t9s7fp0ogna7vasdmnr624uk035hla6h.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
+}
