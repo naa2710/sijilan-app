@@ -598,18 +598,43 @@ const SharedRecordView = ({
   };
 
   const handleReceiptImagePaste = async (event) => {
-    const clipboardItems = Array.from(event.clipboardData?.items || []);
-    const imageItem = clipboardItems.find((item) =>
-      item.type.startsWith("image/"),
-    );
+    // 1. Try standard clipboard items
+    const clipboardData = event.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
 
-    if (!imageItem) return;
+    const items = Array.from(clipboardData.items || []);
+    const imageItem = items.find(item => item.type.startsWith('image/'));
 
-    const selectedFile = imageItem.getAsFile();
-    if (!selectedFile) return;
+    if (imageItem) {
+      const file = imageItem.getAsFile();
+      if (file) {
+        event.preventDefault();
+        await applyReceiptImageFile(file, "paste");
+        return;
+      }
+    }
 
-    event.preventDefault();
-    await applyReceiptImageFile(selectedFile, "paste");
+    // 2. Try looking for <img> tags in HTML (common on mobile)
+    const html = clipboardData.getData('text/html');
+    if (html) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const img = doc.querySelector('img');
+      if (img && img.src && img.src.startsWith('data:')) {
+         try {
+           const res = await fetch(img.src);
+           const blob = await res.blob();
+           const file = new File([blob], `paste-${Date.now()}.png`, { type: blob.type });
+           event.preventDefault();
+           await applyReceiptImageFile(file, "paste");
+           return;
+         } catch (e) {
+           console.error("Failed to parse data URL from HTML paste", e);
+         }
+      }
+    }
+
+    // 3. Fallback: If nothing was found, don't prevent default so user can see what was pasted (for debug)
+    console.warn("Paste event triggered but no image found in clipboard items or HTML.");
   };
 
   useEffect(() => {
