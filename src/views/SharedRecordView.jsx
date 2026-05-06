@@ -511,41 +511,55 @@ const SharedRecordView = ({
 
   const readClipboardImage = async () => {
     if (!navigator.clipboard || !navigator.clipboard.read) {
-      console.warn("Clipboard read API not supported in this browser.");
       return null;
     }
 
     try {
-      // For some mobile browsers, we need to ensure we have focus and handle potential permission issues
-      const clipboardItems = await navigator.clipboard.read().catch(err => {
-        if (err.name === 'NotAllowedError') {
-          throw new Error('يرجى منح الإذن للوصول إلى الحافظة للصق الصورة.');
+      // Explicitly check for permission if API is available
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const status = await navigator.permissions.query({ name: 'clipboard-read' });
+          if (status.state === 'denied') {
+            throw new Error('تم رفض الوصول للحافظة. يرجى تفعيل الإذن من إعدادات المتصفح.');
+          }
+        } catch (e) {
+          // Some browsers don't support querying 'clipboard-read'
         }
-        throw err;
-      });
+      }
 
+      // Ensure window is focused (crucial for mobile)
+      if (document.hasFocus && !document.hasFocus()) {
+        window.focus();
+      }
+
+      const clipboardItems = await navigator.clipboard.read();
       if (!clipboardItems || clipboardItems.length === 0) return null;
 
-      const imageClipboardItem = clipboardItems.find((item) =>
-        item.types.some((type) => type.startsWith("image/")),
-      );
+      // Log types for debugging on mobile
+      console.log('Clipboard items found:', clipboardItems.length);
+      
+      let imageBlob = null;
+      let imageType = null;
 
-      if (!imageClipboardItem) return null;
+      for (const item of clipboardItems) {
+        const type = item.types.find(t => t.startsWith('image/'));
+        if (type) {
+          imageBlob = await item.getType(type);
+          imageType = type;
+          break;
+        }
+      }
 
-      const imageType = imageClipboardItem.types.find((type) =>
-        type.startsWith("image/"),
-      );
-      if (!imageType) return null;
+      if (!imageBlob) return null;
 
-      const blob = await imageClipboardItem.getType(imageType);
       const extension = imageType.split("/")[1] || "png";
-      return new File([blob], `clipboard-receipt-${Date.now()}.${extension}`, {
+      return new File([imageBlob], `clipboard-receipt-${Date.now()}.${extension}`, {
         type: imageType,
       });
     } catch (error) {
       console.error("Failed to read clipboard image:", error);
-      if (error.message && error.message.includes('الإذن')) {
-        await window.appAlert(error.message);
+      if (error.name === 'NotAllowedError' || (error.message && error.message.includes('الإذن'))) {
+        await window.appAlert('يرجى منح المتصفح إذن الوصول للحافظة عند ظهور الطلب لتتمكن من لصق الصور.');
       }
       return null;
     }
@@ -567,9 +581,16 @@ const SharedRecordView = ({
       return;
     }
 
-    await window.appAlert(
-      "لم يتم العثور على صورة في الحافظة. تأكد من نسخ الصورة أو التقاط لقطة شاشة أولاً، ثم حاول مرة أخرى.",
+    // Fallback: If programmatic read failed, suggest native paste
+    const res = await window.appConfirm(
+      'لم نتمكن من الوصول للصور في الحافظة تلقائياً. هل تريد استخدام "وضع اللصق اليدوي"؟ (سيتيح لك الضغط مطولاً واللصق يدوياً)',
+      'لصق صورة'
     );
+    
+    if (res) {
+       // We can provide a temporary overlay or just tell them to paste anywhere
+       await window.appAlert('الآن يمكنك الضغط مطولاً في أي مكان في الصفحة واختيار "لصق" (Paste) من القائمة التي ستظهر.');
+    }
   };
 
   const handleChooseReceiptImage = () => {
