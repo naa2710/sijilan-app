@@ -302,8 +302,20 @@ const writePartnerAccessStore = (nextStore) => {
 };
 
 const isPartnerDisabled = (partnerId) => {
+  const idStr = String(partnerId);
   const { disabledIds } = readPartnerAccessStore();
-  return disabledIds.includes(String(partnerId));
+  
+  // 1. Check if explicitly disabled
+  if (disabledIds.includes(idStr)) return true;
+
+  // 2. Check if partner still exists in settings
+  const settings = readGlobalSettingsStore();
+  if (settings && Array.isArray(settings.partners)) {
+    const exists = settings.partners.some(p => String(p.id) === idStr);
+    if (!exists) return true; // Block if deleted
+  }
+
+  return false;
 };
 
 const readPartnerLedgerStateStore = () => {
