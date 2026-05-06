@@ -4,12 +4,8 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: node server.mjs
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: 22
-      - key: STATIC_ROOT
-        value: ./dist
-      - key: DATA_ROOT
-        value: ./data
