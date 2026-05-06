@@ -40,36 +40,37 @@ export const playNotificationSound = async (variant = 'default') => {
 
   const presets = {
     default: [
-      { frequency: 880, duration: 0.11, delay: 0, gain: 0.12 },
-      { frequency: 1174, duration: 0.16, delay: 0.12, gain: 0.14 },
+      { frequency: 880, duration: 0.15, delay: 0, gain: 0.3 },
+      { frequency: 1174, duration: 0.2, delay: 0.15, gain: 0.35 },
     ],
     coins: [
-      { frequency: 1320, duration: 0.07, delay: 0, gain: 0.16 },
-      { frequency: 1760, duration: 0.08, delay: 0.08, gain: 0.18 },
-      { frequency: 1980, duration: 0.1, delay: 0.18, gain: 0.2 },
+      { frequency: 1320, duration: 0.1, delay: 0, gain: 0.4 },
+      { frequency: 1760, duration: 0.12, delay: 0.1, gain: 0.4 },
+      { frequency: 1980, duration: 0.15, delay: 0.22, gain: 0.45 },
     ],
     warning: [
-      { frequency: 740, duration: 0.12, delay: 0, gain: 0.14 },
-      { frequency: 988, duration: 0.18, delay: 0.14, gain: 0.16 },
+      { frequency: 740, duration: 0.15, delay: 0, gain: 0.35 },
+      { frequency: 988, duration: 0.25, delay: 0.18, gain: 0.4 },
+      { frequency: 740, duration: 0.15, delay: 0.45, gain: 0.35 },
     ],
     message: [
-      { frequency: 1046, duration: 0.08, delay: 0, gain: 0.14 },
-      { frequency: 1318, duration: 0.11, delay: 0.1, gain: 0.16 },
-      { frequency: 1567, duration: 0.14, delay: 0.22, gain: 0.18 },
+      { frequency: 1046, duration: 0.12, delay: 0, gain: 0.35 },
+      { frequency: 1318, duration: 0.15, delay: 0.12, gain: 0.4 },
+      { frequency: 1567, duration: 0.2, delay: 0.28, gain: 0.45 },
     ],
     approved: [
-      { frequency: 880, duration: 0.08, delay: 0, gain: 0.16 },
-      { frequency: 1108, duration: 0.1, delay: 0.08, gain: 0.17 },
-      { frequency: 1480, duration: 0.14, delay: 0.18, gain: 0.18 },
+      { frequency: 988, duration: 0.1, delay: 0, gain: 0.4 },
+      { frequency: 1318, duration: 0.12, delay: 0.1, gain: 0.45 },
+      { frequency: 1975, duration: 0.2, delay: 0.22, gain: 0.5 },
     ],
     frozen: [
-      { frequency: 420, duration: 0.16, delay: 0, gain: 0.18 },
-      { frequency: 360, duration: 0.18, delay: 0.18, gain: 0.2 },
+      { frequency: 320, duration: 0.2, delay: 0, gain: 0.4 },
+      { frequency: 280, duration: 0.25, delay: 0.25, gain: 0.45 },
     ],
     review: [
-      { frequency: 820, duration: 0.09, delay: 0, gain: 0.16 },
-      { frequency: 1032, duration: 0.09, delay: 0.11, gain: 0.16 },
-      { frequency: 820, duration: 0.12, delay: 0.24, gain: 0.18 },
+      { frequency: 880, duration: 0.12, delay: 0, gain: 0.35 },
+      { frequency: 1174, duration: 0.12, delay: 0.15, gain: 0.35 },
+      { frequency: 880, duration: 0.15, delay: 0.3, gain: 0.4 },
     ],
   };
 
@@ -82,10 +83,18 @@ export const playNotificationSound = async (variant = 'default') => {
     const toneStart = startAt + tone.delay;
     const toneEnd = toneStart + tone.duration;
 
-    oscillator.type = variant === 'coins' ? 'triangle' : (variant === 'message' ? 'square' : 'sine');
+    // Use louder waveforms for critical things
+    if (variant === 'approved' || variant === 'coins') {
+       oscillator.type = 'triangle';
+    } else if (variant === 'message' || variant === 'warning') {
+       oscillator.type = 'square'; // Very loud and clear
+    } else {
+       oscillator.type = 'sine';
+    }
+    
     oscillator.frequency.setValueAtTime(tone.frequency, toneStart);
 
-    const toneGain = Number(tone.gain) || 0.12;
+    const toneGain = Number(tone.gain) || 0.15;
 
     gainNode.gain.setValueAtTime(0.0001, toneStart);
     gainNode.gain.exponentialRampToValueAtTime(toneGain, toneStart + 0.02);
@@ -95,7 +104,7 @@ export const playNotificationSound = async (variant = 'default') => {
     gainNode.connect(context.destination);
 
     oscillator.start(toneStart);
-    oscillator.stop(toneEnd + 0.02);
+    oscillator.stop(toneEnd + 0.05);
   });
 
   lastPlayTimestamp = now;
