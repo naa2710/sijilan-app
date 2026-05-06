@@ -6,7 +6,7 @@ import process from 'node:process';
 export const API_PORT = Number(process.env.PORT || process.env.WHATSAPP_DIRECT_PORT || 8787);
 const WHATSAPP_API_VERSION = process.env.WHATSAPP_API_VERSION || 'v23.0';
 const MAX_BODY_SIZE = 12 * 1024 * 1024;
-const STATIC_ROOT = process.env.STATIC_ROOT || path.resolve(process.cwd(), 'dist');
+const STATIC_ROOT = path.resolve(process.cwd(), process.env.STATIC_ROOT || 'dist');
 const DATA_ROOT = process.env.DATA_ROOT
   || (process.env.VERCEL ? path.join('/tmp', 'sijilati-data') : path.resolve(process.cwd(), 'data'));
 const PARTNER_RECEIPTS_FILE = path.join(DATA_ROOT, 'partner-receipts.json');
