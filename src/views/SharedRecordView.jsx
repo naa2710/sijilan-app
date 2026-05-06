@@ -1440,7 +1440,7 @@ const SharedRecordView = ({
                     : "bg-slate-50 border-slate-200 text-slate-700"
                 }`}
               >
-                <div className="flex flex-col items-center justify-center gap-3">
+                <div className="flex flex-col items-center justify-center gap-4 w-full">
                   <button
                     type="button"
                     onPointerDown={(e) => {
@@ -1460,6 +1460,40 @@ const SharedRecordView = ({
                     <ClipboardPaste size={20} strokeWidth={2.5} />
                     <span className="text-sm font-black">لصق لقطة الشاشة</span>
                   </button>
+
+                  {/* Mobile-Friendly Paste Box */}
+                  <div className="w-full px-4">
+                    <div
+                      contentEditable="true"
+                      onPaste={(e) => {
+                        handleReceiptImagePaste(e);
+                        // Clear content after paste to keep it clean
+                        setTimeout(() => {
+                           if (e.target) e.target.innerHTML = "";
+                        }, 100);
+                      }}
+                      onInput={(e) => {
+                        // Prevent actual text input if desired, or just clear it
+                        if (e.target.innerText.length > 0) {
+                           e.target.innerHTML = "";
+                        }
+                      }}
+                      className={`w-full p-4 rounded-2xl border-2 border-dashed text-center transition-all cursor-text min-h-[60px] flex items-center justify-center ${
+                        isDarkMode
+                          ? "bg-white/5 border-white/10 text-slate-400 hover:border-[var(--primary-color)]/50"
+                          : "bg-slate-50 border-slate-200 text-slate-500 hover:border-[var(--primary-color)]/50"
+                      }`}
+                      style={{ 
+                        userSelect: 'text',
+                        WebkitUserSelect: 'text',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <span className="text-[10px] font-black opacity-60 pointer-events-none">
+                        أو اضغط هنا مطولاً ثم اختر "لصق"
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <button
