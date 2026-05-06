@@ -302,7 +302,9 @@ const writePartnerAccessStore = (nextStore) => {
 };
 
 const isPartnerDisabled = (partnerId) => {
-  const idStr = String(partnerId);
+  const idStr = String(partnerId || '').trim();
+  if (!idStr) return true;
+
   const { disabledIds } = readPartnerAccessStore();
   
   // 1. Check if explicitly disabled
@@ -312,7 +314,7 @@ const isPartnerDisabled = (partnerId) => {
   const settings = readGlobalSettingsStore();
   if (settings && Array.isArray(settings.partners)) {
     const exists = settings.partners.some(p => String(p.id) === idStr);
-    if (!exists) return true; // Block if deleted
+    if (!exists) return true; // Block if deleted from the official list
   }
 
   return false;
@@ -378,13 +380,15 @@ const writePinResetRequestsStore = (nextStore) => {
 };
 
 const readGlobalSettingsStore = () => {
-  if (STORE_CACHE.has('settings')) return STORE_CACHE.get('settings');
-  if (!existsSync(ADMIN_SETTINGS_FILE)) return null;
   try {
+    if (!existsSync(ADMIN_SETTINGS_FILE)) return { partners: [] };
     const data = JSON.parse(readFileSync(ADMIN_SETTINGS_FILE, 'utf8'));
     STORE_CACHE.set('settings', data);
     return data;
-  } catch (error) { return null; }
+  } catch (error) { 
+    console.error('[Backend] Error reading settings:', error);
+    return { partners: [] }; 
+  }
 };
 
 const writeGlobalSettingsStore = (nextStore) => {
@@ -1175,8 +1179,7 @@ const handleSendTelegramReceipt = async (request, response) => {
   });
 };
 
-const handleQueuePartnerReceipt = async (request, response) => {
-  const payload = await parseRequestBody(request);
+const handleQueuePartnerReceiptWithBody = async (request, response, payload) => {
   if (payload?.action === 'ack') {
     const result = acknowledgePartnerReceipts(payload.syncIds);
     sendJson(response, 200, {
@@ -1355,8 +1358,7 @@ const handleGetEditRequests = (url, response) => {
   });
 };
 
-const handleSaveEditRequest = async (request, response) => {
-  const payload = await parseRequestBody(request);
+const handleSyncEditRequestWithBody = async (request, response, payload) => {
 
   if (payload?.action === 'resolve') {
     const resolvedRequest = resolveEditRequest(payload);
@@ -1408,8 +1410,7 @@ const handleGetPinResetRequests = (response) => {
   });
 };
 
-const handleSavePinResetRequest = async (request, response) => {
-  const payload = await parseRequestBody(request);
+const handleSyncPinResetRequestWithBody = async (request, response, payload) => {
 
   if (payload?.action === 'resolve') {
     const resolvedRequest = resolvePinResetRequest(payload);
@@ -1481,8 +1482,7 @@ const handleGetPartnerMessage = (url, response) => {
   sendJson(response, 200, { ok: true, message: getPartnerMessage(partnerId) });
 };
 
-const handleSavePartnerReply = async (request, response) => {
-  const payload = await parseRequestBody(request);
+const handleSyncPartnerMessageWithBody = async (request, response, payload) => {
   const updatedMessage = savePartnerMessage(payload);
   sendJson(response, 200, { ok: true, message: updatedMessage });
 };
@@ -1619,7 +1619,12 @@ export const handleRequest = async (request, response) => {
     }
 
     if (request.method === 'POST' && url.pathname === '/api/admin/receipts') {
-      await handleQueuePartnerReceipt(request, response);
+      const body = await parseRequestBody(request);
+      if (body.partnerId && isPartnerDisabled(body.partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
+      await handleQueuePartnerReceiptWithBody(request, response, body);
       return;
     }
 
@@ -1662,12 +1667,22 @@ export const handleRequest = async (request, response) => {
     }
 
     if (request.method === 'GET' && url.pathname === '/api/admin/edit-requests') {
+      const partnerId = url.searchParams.get('partnerId');
+      if (partnerId && isPartnerDisabled(partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
       handleGetEditRequests(url, response);
       return;
     }
 
     if (request.method === 'POST' && url.pathname === '/api/admin/edit-requests') {
-      await handleSaveEditRequest(request, response);
+      const body = await parseRequestBody(request);
+      if (body.partnerId && isPartnerDisabled(body.partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
+      await handleSyncEditRequestWithBody(request, response, body);
       return;
     }
 
@@ -1677,17 +1692,31 @@ export const handleRequest = async (request, response) => {
     }
 
     if (request.method === 'POST' && url.pathname === '/api/admin/pin-reset-requests') {
-      await handleSavePinResetRequest(request, response);
+      const body = await parseRequestBody(request);
+      if (body.partnerId && isPartnerDisabled(body.partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
+      await handleSyncPinResetRequestWithBody(request, response, body);
       return;
     }
 
     if (request.method === 'GET' && url.pathname === '/api/admin/messages') {
+      const partnerId = url.searchParams.get('partnerId');
+      if (partnerId && isPartnerDisabled(partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
       handleGetPartnerMessage(url, response);
       return;
     }
-
     if (request.method === 'POST' && url.pathname === '/api/admin/messages') {
-      await handleSavePartnerReply(request, response);
+      const body = await parseRequestBody(request);
+      if (body.partnerId && isPartnerDisabled(body.partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
+      await handleSyncPartnerMessageWithBody(request, response, body);
       return;
     }
 
