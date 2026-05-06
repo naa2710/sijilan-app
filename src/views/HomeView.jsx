@@ -5,7 +5,7 @@ import { captureNodeAsPng } from '../utils/capture';
 import { 
   LayoutDashboard, Bell, Calculator, User, Users, 
   Heart, AlertCircle, Info, ChevronDown, Banknote, Menu, Send,
-  Download, Copy, FileText
+  Download, Copy, FileText, History as HistoryIcon
 } from 'lucide-react';
 
 import PageContainer from '../components/layout/PageContainer';
@@ -36,7 +36,7 @@ const StatItem = ({ label, value, icon: Icon, colorClass, bgColor, isDarkMode })
 const HomeView = ({ 
   isDarkMode, results, globalSettings, inputs, updateInputValue, 
   openKeypad, applyMariamDiscount, setApplyMariamDiscount, setIsSidebarOpen, updateGlobalSetting,
-  unreadNotificationsCount, onOpenNotifications
+  unreadNotificationsCount, onOpenNotifications, saveToHistory
 }) => {
   const MARIAM_FIXED_AMOUNT = globalSettings.financials.partyCAmount;
   const [showFlowchart, setShowFlowchart] = React.useState(false);
@@ -287,6 +287,18 @@ const HomeView = ({
           >
             <Copy size={20} />
             <span>نسخ التقرير النهائي</span>
+          </button>
+
+          <button
+            onClick={() => saveToHistory?.()}
+            className={`w-full p-5 rounded-[2rem] border-2 font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-all mb-8 ${
+              isDarkMode 
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                : 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm'
+            }`}
+          >
+            <HistoryIcon size={20} />
+            <span>حفظ العملية في الأرشيف</span>
           </button>
         </div>
       </div>

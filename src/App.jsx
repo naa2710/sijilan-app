@@ -710,6 +710,33 @@ const App = () => {
           // Send Reset Message to Partner UI
           const partner = globalSettings.partners?.find(p => String(p.id) === String(partnerId));
           if (partner) {
+             // Create a history record for this clearing event
+             const partnerRecords = ledgers[partnerId] || [];
+             const approvedRecords = partnerRecords.filter(r => r.status === 'approved');
+             
+             if (approvedRecords.length > 0) {
+               const { calculateLedgerBreakdown } = await import('./utils/finance');
+               const breakdown = approvedRecords.reduce((acc, rec) => {
+                 const b = calculateLedgerBreakdown(rec.amount, globalSettings);
+                 acc.gross += b.gross;
+                 acc.discount += b.discount;
+                 acc.commission += b.bankComm;
+                 acc.net += b.net;
+                 acc.count += 1;
+                 return acc;
+               }, { gross: 0, discount: 0, commission: 0, net: 0, count: 0 });
+
+               const historyRecord = {
+                 id: Date.now(),
+                 type: 'ledger_clear',
+                 partnerId: partner.id,
+                 partnerName: partner.name,
+                 date: new Date().toISOString(),
+                 breakdown
+               };
+               setHistory(prev => [historyRecord, ...prev]);
+             }
+
              await pushPartnerMessageToServer({
                partnerId: partner.id,
                partnerName: partner.name,
