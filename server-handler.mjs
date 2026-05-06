@@ -16,6 +16,7 @@ const EDIT_REQUESTS_FILE = path.join(DATA_ROOT, 'partner-edit-requests.json');
 const PIN_RESET_REQUESTS_FILE = path.join(DATA_ROOT, 'pin-reset-requests.json');
 const ABDALALEM_LEDGER_FILE = path.join(DATA_ROOT, 'abdalalem-ledger.json');
 const ADMIN_SETTINGS_FILE = path.join(DATA_ROOT, 'admin-settings.json');
+const PARTNER_ACCESS_FILE = path.join(DATA_ROOT, 'partner-access.json');
 const adminEventClients = new Set();
 const partnerEventClients = new Map();
 const STORE_CACHE = new Map();
@@ -283,14 +284,32 @@ const writePartnerMessagesStore = (nextStore) => {
   writeFileSync(PARTNER_MESSAGES_FILE, JSON.stringify(nextStore), 'utf8');
 };
 
+const readPartnerAccessStore = () => {
+  if (STORE_CACHE.has('access')) return STORE_CACHE.get('access');
+  if (!existsSync(PARTNER_ACCESS_FILE)) return { disabledIds: [] };
+  try {
+    const data = JSON.parse(readFileSync(PARTNER_ACCESS_FILE, 'utf8'));
+    const store = { disabledIds: Array.isArray(data?.disabledIds) ? data.disabledIds : [] };
+    STORE_CACHE.set('access', store);
+    return store;
+  } catch (error) { return { disabledIds: [] }; }
+};
+
+const writePartnerAccessStore = (nextStore) => {
+  STORE_CACHE.set('access', nextStore);
+  ensureDataRoot();
+  writeFileSync(PARTNER_ACCESS_FILE, JSON.stringify(nextStore), 'utf8');
+};
+
+const isPartnerDisabled = (partnerId) => {
+  const { disabledIds } = readPartnerAccessStore();
+  return disabledIds.includes(String(partnerId));
+};
+
 const readPartnerLedgerStateStore = () => {
-  if (STORE_CACHE.has('ledgers')) {
-    // console.log('[Backend] Returning ledger state from cache');
-    return STORE_CACHE.get('ledgers');
-  }
+  if (STORE_CACHE.has('ledgers')) return STORE_CACHE.get('ledgers');
   if (!existsSync(PARTNER_LEDGER_STATE_FILE)) return { ledgers: {} };
   try {
-    console.log('[Backend] Reading ledger state from file');
     const data = JSON.parse(readFileSync(PARTNER_LEDGER_STATE_FILE, 'utf8'));
     const store = { ledgers: data?.ledgers && typeof data.ledgers === 'object' ? data.ledgers : {} };
     STORE_CACHE.set('ledgers', store);
@@ -1062,10 +1081,15 @@ const handleAdminEvents = (request, response) => {
 };
 
 const handlePartnerEvents = (request, url, response) => {
-  const partnerId = Number(url.searchParams.get('partnerId'));
+  const partnerId = url.searchParams.get('partnerId');
 
   if (!partnerId) {
     throw new Error('رقم الشريك غير صالح.');
+  }
+
+  if (isPartnerDisabled(partnerId)) {
+    sendJson(response, 403, { ok: false, message: 'هذا الحساب معطل حالياً من قبل الإدارة.' });
+    return;
   }
 
   registerPartnerEventClient(request, response, partnerId);
@@ -1601,6 +1625,11 @@ export const handleRequest = async (request, response) => {
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/admin/ledger-state') {
+      const partnerId = url.searchParams.get('partnerId');
+      if (partnerId && isPartnerDisabled(partnerId)) {
+        sendJson(response, 403, { ok: false, message: 'تم إيقاف صلاحية الوصول لهذا الرابط.' });
+        return;
+      }
       handleGetLedgerState(url, response);
       return;
     }
@@ -1667,6 +1696,32 @@ export const handleRequest = async (request, response) => {
 
     if (request.method === 'POST' && url.pathname === '/api/admin/settings') {
       await handleSaveSettings(request, response);
+      return;
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/admin/partner-access') {
+      sendJson(response, 200, readPartnerAccessStore());
+      return;
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/admin/partner-access') {
+      const body = await parseRequestBody(request);
+      const { partnerId, disabled } = body;
+      const store = readPartnerAccessStore();
+      const id = String(partnerId);
+      
+      if (disabled) {
+        if (!store.disabledIds.includes(id)) store.disabledIds.push(id);
+      } else {
+        store.disabledIds = store.disabledIds.filter(d => d !== id);
+      }
+      
+      writePartnerAccessStore(store);
+      broadcastAdminEvent('partner-access-updated', store);
+      // Notify the specific partner if they are connected
+      broadcastPartnerEvent(partnerId, 'access-revoked', { disabled });
+      
+      sendJson(response, 200, { ok: true, ...store });
       return;
     }
 

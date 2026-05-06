@@ -25,7 +25,8 @@ import {
 } from 'lucide-react';
 import { sendToTelegramBot, openTelegramFallback, getTelegramConfig } from '../utils/telegramBotService';
 import { sendTelegramDocument } from '../utils/telegramDirect';
-import { pushPartnerMessageToServer, pushLedgerStateToServer } from '../utils/adminSync';
+import { pushPartnerMessageToServer, pushLedgerStateToServer, fetchDisabledPartnerIds, togglePartnerAccessOnServer } from '../utils/adminSync';
+import { ToggleLeft as ToggleIcon, ToggleRight as ToggleActiveIcon, Lock, Unlock } from 'lucide-react';
 
 
 
@@ -87,7 +88,37 @@ const LedgersView = ({
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [isAddingPartner, setIsAddingPartner] = useState(false);
   const [newPartnerData, setNewPartnerData] = useState({ name: '', telegramId: '', telegramTopicId: '' });
+  const [disabledPartnerIds, setDisabledPartnerIds] = useState([]);
+  const [isAccessLoading, setIsAccessLoading] = useState(false);
   const statementExportRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const loadAccess = async () => {
+      try {
+        const ids = await fetchDisabledPartnerIds();
+        setDisabledPartnerIds(ids);
+      } catch (e) {}
+    };
+    loadAccess();
+  }, []);
+
+  const handleToggleAccess = async (partnerId) => {
+    if (isAccessLoading) return;
+    setIsAccessLoading(true);
+    const id = String(partnerId);
+    const currentlyDisabled = disabledPartnerIds.includes(id);
+    
+    try {
+      await togglePartnerAccessOnServer(id, !currentlyDisabled);
+      setDisabledPartnerIds(prev => 
+        !currentlyDisabled ? [...prev, id] : prev.filter(d => d !== id)
+      );
+    } catch (error) {
+      window.appAlert(error.message || 'تعذر تحديث حالة الوصول.');
+    } finally {
+      setIsAccessLoading(false);
+    }
+  };
 
  const partners = globalSettings?.partners || [];
  const filteredPartners = useMemo(() => (
@@ -912,7 +943,23 @@ const LedgersView = ({
 
       <div className="flex items-center gap-5 text-right">
         <div>
-          <h4 className={`text-base font-black mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{partner.name}</h4>
+          <div className="flex items-center justify-end gap-2 mb-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleAccess(partner.id);
+              }}
+              className={`p-1.5 rounded-lg transition-all ${
+                disabledPartnerIds.includes(String(partner.id))
+                  ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
+                  : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
+              }`}
+              title={disabledPartnerIds.includes(String(partner.id)) ? 'تفعيل الرابط' : 'إيقاف الرابط'}
+            >
+              {disabledPartnerIds.includes(String(partner.id)) ? <Lock size={14} /> : <Unlock size={14} />}
+            </button>
+            <h4 className={`text-base font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{partner.name}</h4>
+          </div>
           <div className="flex items-center justify-end gap-2">
             <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${
               partnerReceiptsCount > 0 

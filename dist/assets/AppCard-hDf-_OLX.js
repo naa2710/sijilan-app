@@ -1,0 +1,1 @@
+import{j as a}from"./index-CVOqyNKs.js";const t=({children:r,className:s="",isDarkMode:o})=>a.jsx("div",{className:`w-full rounded-[24px] p-6 border transition-all ${o?"bg-[#141A21] border-[#1F2A3666] shadow-xl":"bg-white border-slate-200 shadow-sm"} ${s}`,children:r});export{t as A};

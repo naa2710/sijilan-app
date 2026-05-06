@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { XCircle } from 'lucide-react';
 
 import SharedRecordView from './views/SharedRecordView';
 import PartnerSettingsSheet from './views/PartnerSettingsSheet';
@@ -30,6 +31,7 @@ import {
   touchSecurityActivity,
 } from './utils/securitySession';
 import { getLedgerRecordStatus } from './utils/finance';
+import { buildPartnerManifest } from './utils/manifest';
 
 const DEFAULT_ADMIN_SHARED_SETTINGS = {
   financials: {
@@ -117,6 +119,7 @@ const SharedPartnerRoot = () => {
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessError, setAccessError] = useState(null);
 
   // Async Initial Load
   useEffect(() => {
@@ -138,6 +141,15 @@ const SharedPartnerRoot = () => {
           timeoutMinutes: partner?.security?.lockTimeoutMinutes,
           storageKey: partnerSecurityActivityKey,
         }));
+
+        // Initial Server Check
+        try {
+          await fetchPartnerLedgerStateFromServer(partnerId);
+        } catch (error) {
+          if (error.message && (error.message.includes('إيقاف') || error.message.includes('معطل'))) {
+            setAccessError(error.message);
+          }
+        }
       } finally {
         setIsLoading(false);
         // Remove the index.html loader if present
@@ -202,6 +214,43 @@ const SharedPartnerRoot = () => {
     };
     setDialogsReady(true);
   }, []);
+
+  // Dynamic PWA Manifest Injection
+  useEffect(() => {
+    if (!partnerId) return undefined;
+
+    const manifestData = buildPartnerManifest({
+      partnerId,
+      partnerName,
+      partnerGender,
+      themeColor: partnerSettings?.appearance?.themeColor,
+      search: window.location.search,
+    });
+
+    const stringified = JSON.stringify(manifestData);
+    const blob = new Blob([stringified], { type: 'application/json' });
+    const manifestUrl = URL.createObjectURL(blob);
+
+    // Update existing manifest or create new one
+    let link = document.querySelector('link[rel="manifest"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    const oldHref = link.getAttribute('href');
+    link.setAttribute('href', manifestUrl);
+
+    // Update document title for installation
+    const oldTitle = document.title;
+    document.title = manifestData.name;
+
+    return () => {
+      if (oldHref) link.setAttribute('href', oldHref);
+      document.title = oldTitle;
+      URL.revokeObjectURL(manifestUrl);
+    };
+  }, [partnerId, partnerName, partnerGender, partnerSettings?.appearance?.themeColor]);
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -616,6 +665,13 @@ const SharedPartnerRoot = () => {
         setNotificationArchive([]);
         localStorage.setItem(partnerNotificationHistoryKey, '[]');
         localStorage.setItem(`${partnerNotificationHistoryKey}_archive`, '[]');
+      },
+      onAccessRevoked: ({ disabled }) => {
+        if (disabled) {
+          window.appAlert('تم إيقاف صلاحية الوصول لهذا الرابط من قبل الإدارة.', 'تنبيه أمني').then(() => {
+             window.location.reload(); // Reload will trigger the server 403 check
+          });
+        }
       }
     });
 
@@ -628,6 +684,24 @@ const SharedPartnerRoot = () => {
       unsubscribe();
     };
   }, [partnerId, partnerName, partnerSettings?.notifications?.retentionDays, partnerNotificationHistoryKey]);
+
+  if (accessError) {
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center ${isDarkMode ? 'bg-[#0B0E12] text-white' : 'bg-[#F8FAFC] text-slate-900'}`}>
+        <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center mb-6 text-rose-500">
+          <XCircle size={48} />
+        </div>
+        <h2 className="text-xl font-black mb-2">عذراً، الوصول غير متاح</h2>
+        <p className="text-sm font-bold text-slate-500 max-w-xs">{accessError}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-8 px-8 py-3 rounded-2xl bg-rose-500 text-white font-black text-sm shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

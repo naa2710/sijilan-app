@@ -510,15 +510,20 @@ const SharedRecordView = ({
   };
 
   const readClipboardImage = async () => {
-    // Check if the Clipboard API is available and supports reading
     if (!navigator.clipboard || !navigator.clipboard.read) {
       console.warn("Clipboard read API not supported in this browser.");
       return null;
     }
 
     try {
-      // Some browsers (like Safari) require permission check or specific user gestures
-      const clipboardItems = await navigator.clipboard.read();
+      // For some mobile browsers, we need to ensure we have focus and handle potential permission issues
+      const clipboardItems = await navigator.clipboard.read().catch(err => {
+        if (err.name === 'NotAllowedError') {
+          throw new Error('يرجى منح الإذن للوصول إلى الحافظة للصق الصورة.');
+        }
+        throw err;
+      });
+
       if (!clipboardItems || clipboardItems.length === 0) return null;
 
       const imageClipboardItem = clipboardItems.find((item) =>
@@ -539,7 +544,9 @@ const SharedRecordView = ({
       });
     } catch (error) {
       console.error("Failed to read clipboard image:", error);
-      // If it is a permission error, we might want to handle it specifically
+      if (error.message && error.message.includes('الإذن')) {
+        await window.appAlert(error.message);
+      }
       return null;
     }
   };

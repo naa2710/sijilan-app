@@ -331,3 +331,19 @@ export const resolvePinResetRequestOnServer = async ({ id }) => (
     'تعذر تحديث طلب إعادة التعيين.',
   )
 );
+export const fetchDisabledPartnerIds = async () => {
+  const payload = await requestJson('/api/admin/partner-access', {}, 'تعذر قراءة حالة حسابات الأفراد.');
+  return Array.isArray(payload?.disabledIds) ? payload.disabledIds : [];
+};
+
+export const togglePartnerAccessOnServer = async (partnerId, disabled) => (
+  requestJson(
+    '/api/admin/partner-access',
+    {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({ partnerId, disabled }),
+    },
+    'تعذر تحديث حالة وصول الفرد.',
+  )
+);
