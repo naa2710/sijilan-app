@@ -24,15 +24,6 @@ const ReportsView = ({
     isOverdue = remainingDays < 0;
   }
 
-  return (
-    <PageContainer>
-      <Header 
-        title="التقارير والسجلات"
-        subtitle="مراجعة أرشيف العمليات"
-        isDarkMode={isDarkMode}
-        setIsSidebarOpen={setIsSidebarOpen}
-      />
-
   const lastRecord = history[0];
   const totalArchivedAmount = history.reduce((sum, r) => sum + (Number(r.results?.totalInitial || r.breakdown?.gross || 0)), 0);
 
@@ -211,9 +202,6 @@ const ReportsView = ({
            </AppCard>
         </section>
       </div>
-    </PageContainer>
-  );
-};
     </PageContainer>
   );
 };
