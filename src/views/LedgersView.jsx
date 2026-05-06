@@ -67,6 +67,7 @@ const LedgersView = ({
   setLedgers,
   updateReceiptStatus,
   clearLedgers,
+  clearPartnerLedger,
   setIsSidebarOpen,
   setActiveTab,
   openKeypad,
@@ -957,6 +958,21 @@ const LedgersView = ({
               title={disabledPartnerIds.includes(String(partner.id)) ? 'تفعيل الرابط' : 'إيقاف الرابط'}
             >
               {disabledPartnerIds.includes(String(partner.id)) ? <Lock size={14} /> : <Unlock size={14} />}
+            </button>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (await window.appConfirm?.(`هل أنت متأكد من تصفير حساب ${partner.name}؟ سيتم حذف جميع إيصالته الحالية.`, 'تصفير الحساب')) {
+                  await clearPartnerLedger?.(partner.id);
+                  window.appAlert?.('تم تصفير الحساب بنجاح.');
+                }
+              }}
+              className={`p-1.5 rounded-lg transition-all ${
+                isDarkMode ? 'bg-white/5 text-slate-400 hover:bg-white/10' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+              }`}
+              title="تصفير هذا الحساب"
+            >
+              <RefreshCcw size={14} />
             </button>
             <h4 className={`text-base font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{partner.name}</h4>
           </div>

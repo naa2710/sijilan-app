@@ -678,8 +678,47 @@ const App = () => {
             headers: { 'Content-Type': 'application/json' }
           });
           localStorage.setItem('financial_ledgers', '{}');
+          
+          // Send Reset Message to ALL partners
+          const partners = globalSettings.partners || [];
+          for (const partner of partners) {
+            if (String(partner.id) === '1' || String(partner.id) === '2') continue; // Skip generic groups if any
+            try {
+               await pushPartnerMessageToServer({
+                 partnerId: partner.id,
+                 partnerName: partner.name,
+                 text: '__RESET__',
+                 sentAt: new Date().toISOString(),
+               });
+            } catch (e) {}
+          }
         } catch (e) {
           console.error('Failed to sync clear command:', e);
+        }
+      },
+      clearPartnerLedger: async (partnerId) => {
+        setLedgers(prev => {
+          const next = { ...prev };
+          delete next[partnerId];
+          return next;
+        });
+        
+        try {
+          // Push to server
+          await pushLedgerStateToServer(partnerId, []);
+          
+          // Send Reset Message to Partner UI
+          const partner = globalSettings.partners?.find(p => String(p.id) === String(partnerId));
+          if (partner) {
+             await pushPartnerMessageToServer({
+               partnerId: partner.id,
+               partnerName: partner.name,
+               text: '__RESET__',
+               sentAt: new Date().toISOString(),
+             });
+          }
+        } catch (e) {
+          console.error('Failed to clear partner ledger:', e);
         }
       },
       abdalalemEntries,

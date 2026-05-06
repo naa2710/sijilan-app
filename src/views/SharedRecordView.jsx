@@ -1443,8 +1443,12 @@ const SharedRecordView = ({
                 <div className="flex flex-col items-center justify-center gap-3">
                   <button
                     type="button"
+                    onPointerDown={(e) => {
+                       e.stopPropagation();
+                    }}
                     onClick={async (e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       await handlePasteReceiptImage();
                     }}
                     className={`px-8 py-3.5 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl ${
