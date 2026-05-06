@@ -182,7 +182,7 @@ const HomeView = ({
               isDarkMode={isDarkMode}
             />
             <StatItem 
-              label={`حصة عبد العالم`} 
+              label={`صافي عاصم`} 
               value={results.finalAsim} 
               icon={User} 
               colorClass="bg-purple-600" 
@@ -257,7 +257,7 @@ const HomeView = ({
                   />
                   <FlowStep 
                     title="توزيع المتبقي"
-                    desc={`يُقسم المتبقي من الصندوق بالنصف بين عبد العالم وصافي ${globalSettings.names.partyA}.`}
+                    desc={`يُقسم المتبقي من الصندوق بالنصف بين ${globalSettings.names.partyA} وعاصم.`}
                     dotColor="bg-purple-500"
                   />
                   <FlowStep 
@@ -274,7 +274,7 @@ const HomeView = ({
                               <button
             onClick={async () => {
               const amount = results.finalA + results.finalB;
-              const reportText = `📊 *التقرير المالي النهائي*\n━━━━━━━━━━━━━━\n💰 *الإجمالي الخام:* ${results.totalInitial.toLocaleString()} ريال\n👤 *صافي ${globalSettings.names.partyA}:* ${results.finalA.toLocaleString()} ريال\n👥 *صافي الأفراد:* ${results.finalB.toLocaleString()} ريال\n🏦 *مبلغ التحويل:* ${amount.toLocaleString()} ريال\n❤️ *حصة مريم:* ${results.mariamShare.toLocaleString()} ريال\n━━━━━━━━━━━━━━\n📅 *التاريخ:* ${new Date().toLocaleDateString('ar-EG')}`;
+              const reportText = `📊 *التقرير المالي النهائي*\n━━━━━━━━━━━━━━\n💰 *الإجمالي الخام:* ${results.totalInitial.toLocaleString()} ريال\n👤 *صافي ${globalSettings.names.partyA}:* ${results.finalA.toLocaleString()} ريال\n👤 *صافي عاصم:* ${results.finalAsim.toLocaleString()} ريال\n👥 *صافي الأفراد:* ${results.finalB.toLocaleString()} ريال\n🏦 *مبلغ التحويل:* ${amount.toLocaleString()} ريال\n❤️ *حصة مريم:* ${results.mariamShare.toLocaleString()} ريال\n━━━━━━━━━━━━━━\n📅 *التاريخ:* ${new Date().toLocaleDateString('ar-EG')}`;
               
               try {
                 await navigator.clipboard.writeText(reportText);
